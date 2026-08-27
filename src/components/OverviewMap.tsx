@@ -3,7 +3,6 @@ import { MapContainer, Polyline, TileLayer, CircleMarker, useMap } from 'react-l
 import type { LatLngBoundsExpression, LatLngTuple } from 'leaflet'
 import { useTimelineStore } from '../store/useTimelineStore'
 import { decimatePoints } from '../lib/decimatePoints'
-import { VisitedRegionsList } from './VisitedRegionsList'
 
 // Rendering every raw point (a multi-year export can have 100k+) as SVG path
 // vertices freezes the page; decimate down to a count Leaflet can draw smoothly.
@@ -48,8 +47,6 @@ export function OverviewMap() {
           <FitBounds bounds={bounds} />
         </MapContainer>
       </div>
-
-      <VisitedRegionsList points={points} />
 
       <button className="primary-btn" onClick={() => setStep('range')} disabled={points.length === 0}>
         기간 선택하기 →

@@ -1,85 +1,94 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { decimatePoints } from '../lib/decimatePoints'
-import { buildRegionModel, type RegionModel } from '../lib/regionModel'
-import { resolveRegionNames } from '../lib/reverseGeocode'
+import { buildEpisodesByKey, buildRegionModel } from '../lib/regionModel'
+import { resolveRegionInfos, type RegionInfo } from '../lib/reverseGeocode'
 import type { TimelinePoint } from '../types/timeline'
 
 // Clustering cost scales with point count; a multi-year export can have
 // 100k+ points, so cap it the same way the trail renderer does.
 const MAX_CLUSTERING_POINTS = 4000
 
-export interface RegionSummary {
-  clusterId: number
-  name: string
-  /** How many separate times this region was entered (>1 means revisited). */
+export interface RegionTableRow {
+  key: string
+  country: string
+  city: string
+  /** How many separate times this city was entered (>1 means revisited). */
   visitCount: number
   firstVisitTimestamp: number
 }
 
 export interface UseRegionNamesResult {
-  regionModel: RegionModel
-  /** Cluster id -> resolved display name (falls back to coordinates if lookup failed). */
-  names: Map<number, string>
   isResolving: boolean
-  /** Resolves once every cluster's name is known (or has fallen back). */
-  resolvePromise: Promise<Map<number, string>>
-  /** One entry per distinct region, ordered by when it was first visited. */
-  summaries: RegionSummary[]
+  /** One row per distinct country+city, sorted by visit count descending. Empty until resolution finishes. */
+  rows: RegionTableRow[]
 }
 
-/** Clusters the given points into regions, reverse-geocodes each (rate-limited, cached), and summarizes visits. */
+function rowKey(info: RegionInfo): string {
+  return `${info.country}|${info.city}`
+}
+
+/**
+ * Clusters the given points into small proximity groups (just to batch
+ * reverse-geocoding calls), resolves each to a city/country, then re-groups
+ * by the resolved city name itself — a large city can span multiple
+ * proximity clusters, and without this a visit to two neighborhoods 20km
+ * apart would show up as two separate "regions" with the same name instead
+ * of one merged, correctly-counted visit history.
+ */
 export function useRegionNames(points: TimelinePoint[]): UseRegionNamesResult {
   const trailPoints = useMemo(() => decimatePoints(points, MAX_CLUSTERING_POINTS), [points])
   const regionModel = useMemo(() => buildRegionModel(trailPoints), [trailPoints])
 
-  const [names, setNames] = useState<Map<number, string>>(new Map())
   const [isResolving, setIsResolving] = useState(false)
-  const resolvePromiseRef = useRef<Promise<Map<number, string>>>(Promise.resolve(new Map()))
+  const [rows, setRows] = useState<RegionTableRow[]>([])
 
   useEffect(() => {
     let cancelled = false
-    setNames(new Map())
+    setRows([])
 
     if (regionModel.clusters.length === 0) {
-      resolvePromiseRef.current = Promise.resolve(new Map())
+      setIsResolving(false)
       return
     }
 
     setIsResolving(true)
-    const collected = new Map<number, string>()
-    resolvePromiseRef.current = resolveRegionNames(regionModel.clusters, (id, name) => {
+    resolveRegionInfos(regionModel.clusters).then((infoByCluster) => {
       if (cancelled) return
-      collected.set(id, name)
-      setNames(new Map(collected))
-    }).then((result) => {
-      if (!cancelled) setIsResolving(false)
-      return result
+
+      const keyToInfo = new Map<string, RegionInfo>()
+      const keys = regionModel.pointCluster.map((clusterId) => {
+        const info = infoByCluster.get(clusterId) ?? { city: '알 수 없음', country: '' }
+        const key = rowKey(info)
+        keyToInfo.set(key, info)
+        return key
+      })
+
+      const episodes = buildEpisodesByKey(keys)
+      const byKey = new Map<string, RegionTableRow>()
+      for (const episode of episodes) {
+        const info = keyToInfo.get(episode.key)!
+        const existing = byKey.get(episode.key)
+        if (!existing) {
+          byKey.set(episode.key, {
+            key: episode.key,
+            country: info.country,
+            city: info.city,
+            visitCount: episode.visitNumber,
+            firstVisitTimestamp: trailPoints[episode.startIndex]?.timestamp ?? 0,
+          })
+        } else {
+          existing.visitCount = Math.max(existing.visitCount, episode.visitNumber)
+        }
+      }
+
+      setRows([...byKey.values()].sort((a, b) => b.visitCount - a.visitCount))
+      setIsResolving(false)
     })
 
     return () => {
       cancelled = true
     }
-  }, [regionModel])
+  }, [regionModel, trailPoints])
 
-  const summaries = useMemo<RegionSummary[]>(() => {
-    const byCluster = new Map<number, RegionSummary>()
-    for (const episode of regionModel.episodes) {
-      const name = names.get(episode.clusterId) ?? '지역 확인 중…'
-      const existing = byCluster.get(episode.clusterId)
-      if (!existing) {
-        byCluster.set(episode.clusterId, {
-          clusterId: episode.clusterId,
-          name,
-          visitCount: episode.visitNumber,
-          firstVisitTimestamp: trailPoints[episode.startIndex]?.timestamp ?? 0,
-        })
-      } else {
-        existing.name = name
-        existing.visitCount = Math.max(existing.visitCount, episode.visitNumber)
-      }
-    }
-    return [...byCluster.values()].sort((a, b) => a.firstVisitTimestamp - b.firstVisitTimestamp)
-  }, [regionModel, names, trailPoints])
-
-  return { regionModel, names, isResolving, resolvePromise: resolvePromiseRef.current, summaries }
+  return { isResolving, rows }
 }

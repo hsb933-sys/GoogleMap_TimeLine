@@ -1,8 +1,13 @@
 import type { RegionCluster } from './regionModel'
 
+export interface RegionInfo {
+  city: string
+  country: string
+}
+
 // Module-level so results are reused across engine instances (e.g. re-selecting
 // a date range) instead of re-fetching the same region.
-const nameCache = new Map<string, string>()
+const infoCache = new Map<string, RegionInfo>()
 
 // BigDataCloud's client-reverse-geocode endpoint is free, keyless, and (unlike
 // Nominatim's /reverse, confirmed CORS-blocked for direct browser fetches from
@@ -24,27 +29,30 @@ interface BigDataCloudResponse {
   countryName?: string
 }
 
-async function fetchRegionName(lat: number, lng: number): Promise<string> {
+async function fetchRegionInfo(lat: number, lng: number): Promise<RegionInfo> {
   const key = cacheKey(lat, lng)
-  const cached = nameCache.get(key)
+  const cached = infoCache.get(key)
   if (cached) return cached
 
   const wait = MIN_REQUEST_INTERVAL_MS - (Date.now() - lastRequestAt)
   if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
   lastRequestAt = Date.now()
 
-  const fallback = `${lat.toFixed(2)}°, ${lng.toFixed(2)}°`
+  const fallback: RegionInfo = { city: `${lat.toFixed(2)}°, ${lng.toFixed(2)}°`, country: '' }
   try {
     const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=ko`
     const res = await fetch(url)
     if (!res.ok) throw new Error(`BigDataCloud ${res.status}`)
     const data = (await res.json()) as BigDataCloudResponse
-    const name = data.city || data.locality || data.principalSubdivision || data.countryName || fallback
-    nameCache.set(key, name)
-    return name
+    const info: RegionInfo = {
+      city: data.city || data.locality || data.principalSubdivision || fallback.city,
+      country: data.countryName || '',
+    }
+    infoCache.set(key, info)
+    return info
   } catch {
     // Offline, blocked, or rate-limited: fall back to coordinates rather than failing the whole video.
-    nameCache.set(key, fallback)
+    infoCache.set(key, fallback)
     return fallback
   }
 }
@@ -60,9 +68,23 @@ export async function resolveRegionNames(
 ): Promise<Map<number, string>> {
   const result = new Map<number, string>()
   for (const cluster of clusters) {
-    const name = await fetchRegionName(cluster.lat, cluster.lng)
-    result.set(cluster.id, name)
-    onResolved?.(cluster.id, name)
+    const info = await fetchRegionInfo(cluster.lat, cluster.lng)
+    result.set(cluster.id, info.city)
+    onResolved?.(cluster.id, info.city)
+  }
+  return result
+}
+
+/** Same as resolveRegionNames, but keeps the country alongside the city for callers that need both. */
+export async function resolveRegionInfos(
+  clusters: RegionCluster[],
+  onResolved?: (clusterId: number, info: RegionInfo) => void,
+): Promise<Map<number, RegionInfo>> {
+  const result = new Map<number, RegionInfo>()
+  for (const cluster of clusters) {
+    const info = await fetchRegionInfo(cluster.lat, cluster.lng)
+    result.set(cluster.id, info)
+    onResolved?.(cluster.id, info)
   }
   return result
 }

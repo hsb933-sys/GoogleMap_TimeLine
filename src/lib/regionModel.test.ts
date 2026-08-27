@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRegionModel, findEpisodeAtIndex } from './regionModel'
+import { buildEpisodesByKey, buildRegionModel, findEpisodeAtIndex } from './regionModel'
 import type { TimelinePoint } from '../types/timeline'
 
 function pt(lat: number, lng: number, timestamp = 0): TimelinePoint {
@@ -56,5 +56,35 @@ describe('findEpisodeAtIndex', () => {
 
   it('returns null for an empty episode list', () => {
     expect(findEpisodeAtIndex([], 0)).toBeNull()
+  })
+})
+
+describe('buildEpisodesByKey', () => {
+  it('merges runs that share the same key, even across raw cluster boundaries', () => {
+    // Simulates two proximity clusters within the same city (e.g. opposite ends
+    // of Seoul) that both resolve to the name "Seoul" — should collapse into
+    // one region instead of appearing as two separate visits.
+    const keys = ['seoul-cluster-a', 'seoul-cluster-a', 'seoul-cluster-b', 'busan', 'seoul-cluster-a']
+    const resolvedNames = new Map([
+      ['seoul-cluster-a', 'Seoul'],
+      ['seoul-cluster-b', 'Seoul'],
+      ['busan', 'Busan'],
+    ])
+    const cityKeys = keys.map((k) => resolvedNames.get(k)!)
+    const episodes = buildEpisodesByKey(cityKeys)
+
+    // Seoul, Busan, Seoul-again — the two adjacent Seoul clusters merge into one episode.
+    expect(episodes.length).toBe(3)
+    expect(episodes[0].key).toBe('Seoul')
+    expect(episodes[0].startIndex).toBe(0)
+    expect(episodes[0].endIndex).toBe(2)
+    expect(episodes[0].visitNumber).toBe(1)
+    expect(episodes[1].key).toBe('Busan')
+    expect(episodes[2].key).toBe('Seoul')
+    expect(episodes[2].visitNumber).toBe(2)
+  })
+
+  it('handles an empty key array', () => {
+    expect(buildEpisodesByKey([])).toEqual([])
   })
 })

@@ -19,6 +19,45 @@ export interface RegionEpisode {
 export interface RegionModel {
   clusters: RegionCluster[]
   episodes: RegionEpisode[]
+  /** Parallel to the input points array: which cluster each point belongs to. */
+  pointCluster: number[]
+}
+
+/** A contiguous run of points sharing the same arbitrary key (e.g. a resolved city name). */
+export interface KeyEpisode<K> {
+  key: K
+  startIndex: number
+  endIndex: number
+  /** 1-based count of how many separate times this key has been entered, up to and including this episode. */
+  visitNumber: number
+}
+
+/**
+ * Generic version of the contiguous-run/visit-count logic in buildRegionModel,
+ * usable for any per-point key sequence — e.g. re-grouping raw proximity
+ * clusters by their resolved city name, so two clusters on opposite sides of
+ * the same large city collapse into one "region" instead of appearing twice.
+ */
+export function buildEpisodesByKey<K>(keys: K[]): KeyEpisode<K>[] {
+  const episodes: KeyEpisode<K>[] = []
+  if (keys.length === 0) return episodes
+
+  const visitCounts = new Map<K, number>()
+  let cur = keys[0]
+  let startIndex = 0
+  for (let i = 1; i <= keys.length; i++) {
+    const k = i < keys.length ? keys[i] : null
+    if (k !== cur) {
+      const count = (visitCounts.get(cur) ?? 0) + 1
+      visitCounts.set(cur, count)
+      episodes.push({ key: cur, startIndex, endIndex: i - 1, visitNumber: count })
+      if (k !== null) {
+        cur = k
+        startIndex = i
+      }
+    }
+  }
+  return episodes
 }
 
 // City/metro-area granularity: points within this radius of an existing
@@ -58,26 +97,14 @@ export function buildRegionModel(points: TimelinePoint[]): RegionModel {
     }
   }
 
-  const episodes: RegionEpisode[] = []
-  const visitCounts = new Map<number, number>()
-  if (pointCluster.length > 0) {
-    let curCluster = pointCluster[0]
-    let startIndex = 0
-    for (let i = 1; i <= pointCluster.length; i++) {
-      const c = i < pointCluster.length ? pointCluster[i] : null
-      if (c !== curCluster) {
-        const count = (visitCounts.get(curCluster) ?? 0) + 1
-        visitCounts.set(curCluster, count)
-        episodes.push({ clusterId: curCluster, startIndex, endIndex: i - 1, visitNumber: count })
-        if (c !== null) {
-          curCluster = c
-          startIndex = i
-        }
-      }
-    }
-  }
+  const episodes: RegionEpisode[] = buildEpisodesByKey(pointCluster).map((ep) => ({
+    clusterId: ep.key,
+    startIndex: ep.startIndex,
+    endIndex: ep.endIndex,
+    visitNumber: ep.visitNumber,
+  }))
 
-  return { clusters, episodes }
+  return { clusters, episodes, pointCluster }
 }
 
 /** Finds the episode covering the given fractional point index (episodes are sorted, non-overlapping). */

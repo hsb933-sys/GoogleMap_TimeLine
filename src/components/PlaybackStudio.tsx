@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import { useTimelineStore } from '../store/useTimelineStore'
 import { usePlaybackStore, type ExportDuration } from '../store/usePlaybackStore'
 import { CanvasRecorder, type CanvasRecorderHandle } from './CanvasRecorder'
+import { RegionVisitsTable } from './RegionVisitsTable'
 import { isRecordingSupported } from '../lib/videoExporter'
 
 const DURATIONS: ExportDuration[] = [10, 15, 30, 60]
@@ -58,6 +59,8 @@ export function PlaybackStudio() {
       <p>
         {selectedFrom?.toLocaleDateString()} ~ {selectedTo?.toLocaleDateString()} · {rangePoints.length}개 지점
       </p>
+
+      <RegionVisitsTable points={rangePoints} />
 
       <CanvasRecorder
         ref={recorderRef}

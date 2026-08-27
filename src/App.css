@@ -51,45 +51,45 @@
   overflow: hidden;
 }
 
-.region-list-wrap {
+.region-table-wrap {
   margin: 16px 0;
 }
 
-.region-list-wrap h2 {
+.region-table-wrap h2 {
   font-size: 1.1rem;
   margin-bottom: 8px;
 }
 
-.region-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.region-table-status {
+  color: #555;
+  margin: 16px 0;
 }
 
-.region-list-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: var(--code-bg, #f4f3ec);
-  border: 1px solid var(--border, #e5e4e7);
-  border-radius: 999px;
+.region-table-scroll {
+  overflow-x: auto;
+}
+
+.region-table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 0.9rem;
 }
 
-.region-name {
-  color: var(--text-h, #08060d);
+.region-table th,
+.region-table td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border, #e5e4e7);
 }
 
-.region-visit-badge {
-  background: #1d3557;
-  color: #fff;
-  font-size: 0.75rem;
-  padding: 2px 8px;
-  border-radius: 999px;
+.region-table th {
+  color: #555;
+  font-weight: 600;
+}
+
+.region-table td:last-child,
+.region-table th:last-child {
+  text-align: right;
 }
 
 .recorder-canvas {
