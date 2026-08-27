@@ -19,6 +19,8 @@ export interface RegionTableRow {
 
 export interface UseRegionNamesResult {
   isResolving: boolean
+  /** 0..1 fraction of distinct regions resolved so far (1 once done, 0 if nothing to resolve). */
+  resolveProgress: number
   /** One row per distinct country+city, sorted by visit count descending. Empty until resolution finishes. */
   rows: RegionTableRow[]
 }
@@ -40,19 +42,27 @@ export function useRegionNames(points: TimelinePoint[]): UseRegionNamesResult {
   const regionModel = useMemo(() => buildRegionModel(trailPoints), [trailPoints])
 
   const [isResolving, setIsResolving] = useState(false)
+  const [resolveProgress, setResolveProgress] = useState(0)
   const [rows, setRows] = useState<RegionTableRow[]>([])
 
   useEffect(() => {
     let cancelled = false
     setRows([])
+    setResolveProgress(0)
 
-    if (regionModel.clusters.length === 0) {
+    const totalClusters = regionModel.clusters.length
+    if (totalClusters === 0) {
       setIsResolving(false)
       return
     }
 
     setIsResolving(true)
-    resolveRegionInfos(regionModel.clusters).then((infoByCluster) => {
+    let resolvedCount = 0
+    resolveRegionInfos(regionModel.clusters, () => {
+      if (cancelled) return
+      resolvedCount += 1
+      setResolveProgress(resolvedCount / totalClusters)
+    }).then((infoByCluster) => {
       if (cancelled) return
 
       const keyToInfo = new Map<string, RegionInfo>()
@@ -82,6 +92,7 @@ export function useRegionNames(points: TimelinePoint[]): UseRegionNamesResult {
       }
 
       setRows([...byKey.values()].sort((a, b) => b.visitCount - a.visitCount))
+      setResolveProgress(1)
       setIsResolving(false)
     })
 
@@ -90,5 +101,5 @@ export function useRegionNames(points: TimelinePoint[]): UseRegionNamesResult {
     }
   }, [regionModel, trailPoints])
 
-  return { isResolving, rows }
+  return { isResolving, resolveProgress, rows }
 }

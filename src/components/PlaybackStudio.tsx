@@ -60,8 +60,6 @@ export function PlaybackStudio() {
         {selectedFrom?.toLocaleDateString()} ~ {selectedTo?.toLocaleDateString()} · {rangePoints.length}개 지점
       </p>
 
-      <RegionVisitsTable points={rangePoints} />
-
       <CanvasRecorder
         ref={recorderRef}
         points={rangePoints}
@@ -126,6 +124,8 @@ export function PlaybackStudio() {
       <div className="btn-row">
         <button onClick={() => setStep('range')}>← 기간 다시 선택</button>
       </div>
+
+      <RegionVisitsTable points={rangePoints} />
     </div>
   )
 }

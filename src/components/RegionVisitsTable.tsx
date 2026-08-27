@@ -6,10 +6,19 @@ interface Props {
 }
 
 export function RegionVisitsTable({ points }: Props) {
-  const { isResolving, rows } = useRegionNames(points)
+  const { isResolving, resolveProgress, rows } = useRegionNames(points)
 
   if (isResolving) {
-    return <p className="region-table-status">방문 지역 조회 중...</p>
+    const percent = Math.round(resolveProgress * 100)
+    return (
+      <div className="region-table-wrap">
+        <h2>방문 지역</h2>
+        <p className="region-table-status">방문 지역 조회 중... ({percent}%)</p>
+        <div className="region-progress-track" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
+          <div className="region-progress-fill" style={{ width: `${percent}%` }} />
+        </div>
+      </div>
+    )
   }
   if (rows.length === 0) return null
 
