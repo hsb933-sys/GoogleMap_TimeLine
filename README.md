@@ -57,10 +57,11 @@ npm run build
 - Safari 등 일부 구형 브라우저는 `MediaRecorder`를 지원하지 않을 수 있으며, 이 경우 앱이
   안내 메시지를 표시합니다.
 - **여행지역 이름(역지오코딩)**: 방문 지점들을 도시 단위(약 15km 반경)로 묶은 뒤
-  OSM Nominatim(`nominatim.openstreetmap.org`)에 좌표를 보내 지명을 조회합니다
-  (`src/lib/reverseGeocode.ts`). Nominatim 정책상 초당 1회로 속도를 제한하고 결과는
-  캐시합니다. 이 조회 과정에서만 좌표가 외부(OSM)로 전송되며, 원본 Timeline.json이나
-  전체 경로 데이터는 여전히 브라우저 밖으로 나가지 않습니다. Nominatim이 요청을 막거나
-  (개발 중 `localhost`에서 CORS 차단이 확인된 사례가 있음) 오프라인 상태면, 자동으로
+  BigDataCloud의 무료 클라이언트 역지오코딩 API(`api.bigdatacloud.net`)에 좌표를 보내
+  지명을 조회합니다(`src/lib/reverseGeocode.ts`). API 키가 필요 없고 브라우저 직접 호출을
+  위해 CORS를 지원합니다 (OSM Nominatim은 브라우저에서 직접 호출 시 CORS 헤더를 보내지
+  않아 로컬/실제 배포 도메인 모두에서 차단되는 것을 확인해 이 서비스로 교체했습니다).
+  이 조회 과정에서만 좌표가 외부로 전송되며, 원본 Timeline.json이나 전체 경로 데이터는
+  여전히 브라우저 밖으로 나가지 않습니다. 요청이 실패하거나 오프라인 상태면 자동으로
   좌표 문자열(예: "37.57°, 126.98°")로 대체되어 표시되며 영상 생성 자체는 실패하지
-  않습니다. 실제 배포 도메인에서 다시 확인해 보는 것을 권장합니다.
+  않습니다.

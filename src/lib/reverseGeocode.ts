@@ -4,8 +4,12 @@ import type { RegionCluster } from './regionModel'
 // a date range) instead of re-fetching the same region.
 const nameCache = new Map<string, string>()
 
-// Nominatim's usage policy caps unauthenticated use at ~1 request/second.
-const MIN_REQUEST_INTERVAL_MS = 1100
+// BigDataCloud's client-reverse-geocode endpoint is free, keyless, and (unlike
+// Nominatim's /reverse, confirmed CORS-blocked for direct browser fetches from
+// both localhost and a real deployed domain) sends CORS headers for direct
+// browser use. No published hard rate limit, but a small spacing is kept to
+// stay a well-behaved client rather than firing a burst of requests.
+const MIN_REQUEST_INTERVAL_MS = 250
 let lastRequestAt = 0
 
 function cacheKey(lat: number, lng: number): string {
@@ -13,13 +17,11 @@ function cacheKey(lat: number, lng: number): string {
   return `${lat.toFixed(2)},${lng.toFixed(2)}`
 }
 
-interface NominatimAddress {
+interface BigDataCloudResponse {
   city?: string
-  town?: string
-  village?: string
-  county?: string
-  state?: string
-  country?: string
+  locality?: string
+  principalSubdivision?: string
+  countryName?: string
 }
 
 async function fetchRegionName(lat: number, lng: number): Promise<string> {
@@ -33,12 +35,11 @@ async function fetchRegionName(lat: number, lng: number): Promise<string> {
 
   const fallback = `${lat.toFixed(2)}°, ${lng.toFixed(2)}°`
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=10&accept-language=ko`
-    const res = await fetch(url, { headers: { Accept: 'application/json' } })
-    if (!res.ok) throw new Error(`Nominatim ${res.status}`)
-    const data = (await res.json()) as { address?: NominatimAddress; name?: string }
-    const addr = data.address ?? {}
-    const name = addr.city || addr.town || addr.village || addr.county || addr.state || addr.country || data.name || fallback
+    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=ko`
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`BigDataCloud ${res.status}`)
+    const data = (await res.json()) as BigDataCloudResponse
+    const name = data.city || data.locality || data.principalSubdivision || data.countryName || fallback
     nameCache.set(key, name)
     return name
   } catch {
