@@ -1,0 +1,77 @@
+{
+  "semanticSegments": [
+    {
+      "startTime": "2023-01-05T09:00:00.000Z",
+      "endTime": "2023-01-05T10:30:00.000Z",
+      "visit": {
+        "topCandidate": {
+          "placeId": "ChIJ_place_home",
+          "placeLocation": { "latLng": "37.5665°, 126.9780°" }
+        }
+      }
+    },
+    {
+      "startTime": "2023-01-05T10:30:00.000Z",
+      "endTime": "2023-01-05T11:15:00.000Z",
+      "activity": {
+        "topCandidate": { "type": "walking" }
+      },
+      "timelinePath": [
+        { "point": "37.5665,126.9780", "time": "2023-01-05T10:30:00.000Z" },
+        { "point": "37.5670,126.9800", "time": "2023-01-05T10:40:00.000Z" },
+        { "point": "37.5680,126.9820", "time": "2023-01-05T10:50:00.000Z" },
+        { "point": "37.5695,126.9850", "time": "2023-01-05T11:00:00.000Z" },
+        { "point": "37.5700,126.9870", "time": "2023-01-05T11:15:00.000Z" }
+      ]
+    },
+    {
+      "startTimestamp": "2023-03-14T08:00:00.000Z",
+      "endTimestamp": "2023-03-14T09:00:00.000Z",
+      "visit": {
+        "topCandidate": {
+          "place_id": "ChIJ_place_office",
+          "place_location": { "lat_lng": "37.4979,127.0276" }
+        }
+      }
+    },
+    {
+      "startTime": "2023-03-14T09:00:00.000Z",
+      "endTime": "2023-03-14T09:45:00.000Z",
+      "activity": {
+        "topCandidate": { "type": "driving" },
+        "path": [
+          { "latitude": 37.4979, "longitude": 127.0276, "timestamp": "2023-03-14T09:00:00.000Z" },
+          { "latitude": 37.5000, "longitude": 127.0300, "timestamp": "2023-03-14T09:15:00.000Z" },
+          { "latitude": 37.5050, "longitude": 127.0350, "timestamp": "2023-03-14T09:30:00.000Z" },
+          { "latitude": 37.5100, "longitude": 127.0400, "timestamp": "2023-03-14T09:45:00.000Z" }
+        ]
+      }
+    },
+    {
+      "startTime": "2023-07-20T05:00:00.000Z",
+      "endTime": "2023-07-20T06:00:00.000Z",
+      "visit": {
+        "topCandidate": {
+          "placeId": "ChIJ_place_airport",
+          "placeLocation": { "latLng": "35.1796, 129.0756" }
+        }
+      }
+    },
+    {
+      "startTime": "2023-07-20T06:00:00.000Z",
+      "endTime": "2023-07-20T08:30:00.000Z",
+      "activity": { "topCandidate": { "type": "flying" } },
+      "timelinePath": [
+        { "point": "35.1796,129.0756", "time": "2023-07-20T06:00:00.000Z" },
+        { "point": "34.5000,130.5000", "time": "2023-07-20T06:45:00.000Z" },
+        { "point": "33.0000,132.0000", "time": "2023-07-20T07:30:00.000Z" },
+        { "point": "35.6762,139.6503", "time": "2023-07-20T08:30:00.000Z" }
+      ]
+    },
+    {
+      "startTime": "2023-11-02T12:00:00.000Z",
+      "endTime": "2023-11-02T12:30:00.000Z",
+      "somethingUnexpected": true
+    }
+  ]
+}
