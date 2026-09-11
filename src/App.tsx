@@ -5,6 +5,7 @@ import { UploadScreen } from './components/UploadScreen'
 import { OverviewMap } from './components/OverviewMap'
 import { DateRangePicker } from './components/DateRangePicker'
 import { PlaybackStudio } from './components/PlaybackStudio'
+import { RelatedApps } from './components/RelatedApps'
 
 // When embedded (e.g. a blog's iframe), some mobile skins shrink/mis-render
 // the iframe or interfere with tap handling for the file picker. Offer an
@@ -23,6 +24,7 @@ function App() {
 
   return (
     <div className="app">
+      <RelatedApps />
       {isEmbedded && (
         <a className="open-new-tab-banner" href={window.location.href} target="_blank" rel="noopener noreferrer">
           모바일에서 업로드가 잘 안되나요? 새 탭에서 크게 열기 ↗

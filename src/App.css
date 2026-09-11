@@ -28,6 +28,29 @@
   background: #e0e7ff;
 }
 
+.related-apps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.related-apps-link {
+  display: inline-block;
+  padding: 8px 14px;
+  background: #fdf1de;
+  color: #8a4b12;
+  border: 1px solid #f0d9b8;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.related-apps-link:hover {
+  background: #fbe6c4;
+}
+
 .dropzone {
   margin-top: 16px;
   padding: 48px 16px;
